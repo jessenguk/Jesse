@@ -2,7 +2,7 @@
   "meta": {
     "sourceFile": "副本个股收益可视化分析包_v3b_cleaned.xlsx",
     "sourceSheet": "Data_Master",
-    "generatedAt": "2026-06-15T07:21:09.944Z",
+    "generatedAt": "2026-06-15T07:22:03.106Z",
     "totalRawRows": 53,
     "totalValidRows": 53,
     "columnsUsed": {
@@ -23,12 +23,12 @@
       "stockCode": "300285",
       "recommendDate": "2026-02-25",
       "industry": "新材料",
-      "returnPct": 100000,
+      "returnPct": 10.99,
       "maxReturnPct": 11.07,
       "trackingDays": 10,
       "dailyReturnPct": 1.099,
       "isPositive": true,
-      "returnBucket": ">50%"
+      "returnBucket": "10~20%"
     },
     {
       "stockName": "风华高科",
