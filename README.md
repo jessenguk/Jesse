@@ -50,6 +50,20 @@ npm run preview  # 本地预览构建结果
 2. 重新运行 `npm run prepare-data` 生成新的 `dashboard-data.json`。
 3. 刷新浏览器即可看到更新后的数据，无需修改任何组件代码。
 
+## 发布到线上（Vercel）
+
+修改 Excel 数据后，在终端依次运行以下命令，即可更新线上网站（约 1 分钟内生效）：
+
+```bash
+cd /Users/j/stock-dashboard
+npm run prepare-data
+git add data/ public/generated/dashboard-data.json
+git commit -m "Update stock data"
+git push
+```
+
+`git push` 会自动触发 Vercel 重新部署，线上地址（如 `jesse123.vercel.app`）会自动更新为最新数据，无需在 Vercel 上做任何操作。
+
 ## 字段说明
 
 `scripts/prepare-data.ts` 会从 Excel 中识别并标准化以下字段（括号内为源数据列名）：

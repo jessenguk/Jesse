@@ -4,7 +4,9 @@ import CoreInsights from './components/CoreInsights'
 import TopBottomChart from './components/TopBottomChart'
 import ReturnDistributionChart from './components/ReturnDistributionChart'
 import IndustryAverageChart from './components/IndustryAverageChart'
+import MaxReturnTimingChart from './components/MaxReturnTimingChart'
 import BatchWaterfallChart from './components/BatchWaterfallChart'
+import BatchComparisonChart from './components/BatchComparisonChart'
 import IndustryBubbleChart from './components/IndustryBubbleChart'
 import SectionCard from './components/SectionCard'
 import { useDashboardData } from './lib/data'
@@ -178,12 +180,21 @@ export default function App() {
               </SectionCard>
             </div>
 
-            <SectionCard index={4} title="推荐批次贡献瀑布图" subtitle="各推荐日期对整体等权平均收益的贡献">
+            <SectionCard index={4} title="推荐后收益机会出现节奏" subtitle="推荐之后，最高涨幅通常在多久之后出现">
+              <MaxReturnTimingChart stocks={filteredStocks} />
+            </SectionCard>
+
+            <SectionCard index={5} title="推荐批次贡献瀑布图" subtitle="各推荐日期对整体等权平均收益的贡献">
               <BatchWaterfallChart stocks={filteredStocks} />
             </SectionCard>
 
-            <SectionCard index={5} title="行业四维气泡图" subtitle="X：平均收益　Y：正收益占比　气泡大小：股票数量　颜色：行业弹性">
+            <SectionCard index={6} title="推荐批次贡献对比：当前收益 vs 最高涨幅机会" subtitle="对比实际留存收益与曾出现过的最高收益机会">
+              <BatchComparisonChart stocks={filteredStocks} />
+            </SectionCard>
+
+            <SectionCard index={7} title="行业四维气泡图" subtitle="X：平均收益　Y：正收益占比　气泡大小：股票数量　颜色：行业弹性">
               <IndustryBubbleChart stocks={filteredStocks} showLabels={showBubbleLabels} />
+
             </SectionCard>
 
             <footer className="py-4 text-center font-mono text-[11px] tracking-wide text-gray-400">
