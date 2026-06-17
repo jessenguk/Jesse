@@ -6,7 +6,6 @@ import ReturnDistributionChart from './components/ReturnDistributionChart'
 import IndustryAverageChart from './components/IndustryAverageChart'
 import MaxReturnTimingChart from './components/MaxReturnTimingChart'
 import BatchWaterfallChart from './components/BatchWaterfallChart'
-import BatchComparisonChart from './components/BatchComparisonChart'
 import IndustryBubbleChart from './components/IndustryBubbleChart'
 import SectionCard from './components/SectionCard'
 import { useDashboardData } from './lib/data'
@@ -188,11 +187,7 @@ export default function App() {
               <BatchWaterfallChart stocks={filteredStocks} />
             </SectionCard>
 
-            <SectionCard index={6} title="推荐批次贡献对比：当前收益 vs 最高涨幅机会" subtitle="对比实际留存收益与曾出现过的最高收益机会">
-              <BatchComparisonChart stocks={filteredStocks} />
-            </SectionCard>
-
-            <SectionCard index={7} title="行业四维气泡图" subtitle="X：平均收益　Y：正收益占比　气泡大小：股票数量　颜色：行业弹性">
+            <SectionCard index={6} title="行业四维气泡图" subtitle="X：平均收益　Y：正收益占比　气泡大小：股票数量　颜色：行业弹性">
               <IndustryBubbleChart stocks={filteredStocks} showLabels={showBubbleLabels} />
 
             </SectionCard>
