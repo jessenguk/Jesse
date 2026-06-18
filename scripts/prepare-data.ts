@@ -22,7 +22,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   maxReturnPct: ['最高涨幅（%）', '最高涨幅(%)', '最高涨幅'],
   trackingDays: ['距推荐日交易天数', '跟踪天数', '交易天数'],
   dailyReturnPct: ['日均收益率'],
-  settlementDate: ['统计截止日期', '截止跟踪日', '截止日期'],
+  settlementDate: ['截止跟踪日', '统计截止日期', '截止日期'],
 }
 
 function getSheetHeaders(filePath: string): Record<string, string[]> {
@@ -87,7 +87,12 @@ function parseSettlementDates(filePath: string): Map<string, string> {
     const header = (rows[0] as unknown[]).map((h) => String(h ?? '').trim())
     const codeIdx = header.findIndex((h) => h === '代码' || h === '股票代码')
     const dateIdx = header.findIndex((h) => COLUMN_ALIASES.recommendDate.includes(h))
-    const settlIdx = header.findIndex((h) => COLUMN_ALIASES.settlementDate.includes(h))
+    // Priority: 截止跟踪日 > 统计截止日期 > 截止日期
+    let settlIdx = -1
+    for (const alias of COLUMN_ALIASES.settlementDate) {
+      const idx = header.indexOf(alias)
+      if (idx !== -1) { settlIdx = idx; break }
+    }
     if (codeIdx === -1 || dateIdx === -1 || settlIdx === -1) continue
     for (const row of rows.slice(1) as unknown[][]) {
       const code = String(row[codeIdx] ?? '').trim().split('.')[0].padStart(6, '0')
@@ -246,6 +251,9 @@ function formatDate(raw: unknown): string | null {
   }
   const str = String(raw).trim()
   if (/^\d{8}$/.test(str)) return `${str.slice(0, 4)}-${str.slice(4, 6)}-${str.slice(6, 8)}`
+  // Handle YYYY/M/D or YYYY/MM/DD -> YYYY-MM-DD
+  const slashMatch = str.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/)
+  if (slashMatch) return `${slashMatch[1]}-${slashMatch[2].padStart(2, '0')}-${slashMatch[3].padStart(2, '0')}`
   return str
 }
 
@@ -340,18 +348,23 @@ function main() {
     warnings.push(`${noTrackingDays} 支个股缺少有效的"距推荐日交易天数"，日均收益率显示为 N/A。`)
   }
 
-  // Merge settlement dates from supplementary file if main file didn't have the column
-  if (settlementFile && stocks.some((s) => s.settlementDate === null)) {
-    const settlMap = parseSettlementDates(path.join(DATA_DIR, settlementFile))
-    let merged = 0
-    for (const stock of stocks) {
-      if (stock.settlementDate === null) {
-        const key = `${stock.stockCode}|${stock.recommendDate}`
-        const found = settlMap.get(key) ?? null
-        if (found) { stock.settlementDate = found; merged++ }
+  // Merge settlement dates from all xlsx files (including supplementary files)
+  if (stocks.some((s) => s.settlementDate === null)) {
+    const allXlsx = fs.readdirSync(DATA_DIR)
+      .filter((f) => f.toLowerCase().endsWith('.xlsx') && !f.startsWith('~$') && f !== fileName)
+      .map((f) => path.join(DATA_DIR, f))
+    for (const fp of allXlsx) {
+      const settlMap = parseSettlementDates(fp)
+      if (settlMap.size === 0) continue
+      let merged = 0
+      for (const stock of stocks) {
+        if (stock.settlementDate === null) {
+          const found = settlMap.get(`${stock.stockCode}|${stock.recommendDate}`) ?? null
+          if (found) { stock.settlementDate = found; merged++ }
+        }
       }
+      if (merged > 0) console.log(`从 ${path.basename(fp)} 补充了 ${merged} 条统计截止日期`)
     }
-    if (merged > 0) console.log(`从 ${settlementFile} 补充了 ${merged} 条统计截止日期`)
   }
 
   const dailyPrices = priceFile ? parseDailyPrices(path.join(DATA_DIR, priceFile)) : {}

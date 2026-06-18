@@ -2,7 +2,7 @@
   "meta": {
     "sourceFile": "副本个股收益可视化分析包_v3b_cleaned.xlsx",
     "sourceSheet": "Data_Master",
-    "generatedAt": "2026-06-18T07:35:24.681Z",
+    "generatedAt": "2026-06-18T07:49:17.639Z",
     "totalRawRows": 53,
     "totalValidRows": 53,
     "columnsUsed": {
@@ -17,7 +17,7 @@
       "settlementDate": null
     },
     "warnings": [
-      "未找到可选列「settlementDate」（候选列名：统计截止日期、截止跟踪日、截止日期），该字段将显示为 N/A。"
+      "未找到可选列「settlementDate」（候选列名：截止跟踪日、统计截止日期、截止日期），该字段将显示为 N/A。"
     ]
   },
   "stocks": [
@@ -663,24 +663,24 @@
       "stockCode": "300846",
       "recommendDate": "2026-05-18",
       "industry": "计算机",
-      "returnPct": -33.4,
+      "returnPct": -27.35,
       "maxReturnPct": 4.32,
       "trackingDays": 2,
-      "dailyReturnPct": -16.6985,
-      "settlementDate": "2026-06-11",
+      "dailyReturnPct": -13.675,
+      "settlementDate": "2026-06-18",
       "isPositive": false,
-      "returnBucket": "<-30%"
+      "returnBucket": "-30~-20%"
     },
     {
       "stockName": "科华数据",
       "stockCode": "002335",
       "recommendDate": "2026-05-18",
       "industry": "电力设备",
-      "returnPct": -47.21,
+      "returnPct": -41.22,
       "maxReturnPct": 7.1,
       "trackingDays": 12,
-      "dailyReturnPct": -3.9341,
-      "settlementDate": "2026-06-11",
+      "dailyReturnPct": -3.435,
+      "settlementDate": "2026-06-18",
       "isPositive": false,
       "returnBucket": "<-30%"
     },
@@ -689,26 +689,26 @@
       "stockCode": "688411",
       "recommendDate": "2026-05-21",
       "industry": "电力设备",
-      "returnPct": -9.96,
+      "returnPct": 4.85,
       "maxReturnPct": 8.23,
       "trackingDays": 3,
-      "dailyReturnPct": -3.3209,
-      "settlementDate": "2026-06-11",
-      "isPositive": false,
-      "returnBucket": "-10~0%"
+      "dailyReturnPct": 1.6167,
+      "settlementDate": "2026-06-19",
+      "isPositive": true,
+      "returnBucket": "0~10%"
     },
     {
       "stockName": "湖南裕能",
       "stockCode": "301358",
       "recommendDate": "2026-05-21",
       "industry": "电力设备",
-      "returnPct": -27.35,
+      "returnPct": -19.75,
       "maxReturnPct": 1.56,
       "trackingDays": 7,
-      "dailyReturnPct": -3.9075,
-      "settlementDate": "2026-06-11",
+      "dailyReturnPct": -2.8214,
+      "settlementDate": "2026-06-19",
       "isPositive": false,
-      "returnBucket": "-30~-20%"
+      "returnBucket": "-20~-10%"
     }
   ],
   "dailyPrices": {
