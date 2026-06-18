@@ -44,6 +44,7 @@ export interface IndexDailyPrice {
   date: string
   cyzb: number | null
   zz500: number | null
+  zz1000: number | null
 }
 
 export interface DashboardData {

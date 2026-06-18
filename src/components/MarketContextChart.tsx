@@ -18,6 +18,7 @@ import {
   formatPct,
   getMarketContextInsights,
   getMarketContextSummary,
+  type IndexKey,
   type MarketContextBatch,
 } from '../lib/metrics'
 import type { IndexDailyPrice, StockRecord } from '../lib/types'
@@ -25,6 +26,8 @@ import type { IndexDailyPrice, StockRecord } from '../lib/types'
 interface MarketContextChartProps {
   stocks: StockRecord[]
   indexPrices: IndexDailyPrice[]
+  indexKey?: IndexKey
+  indexName?: string
 }
 
 const QUADRANT_COLORS: Record<string, string> = {
@@ -56,8 +59,8 @@ function ScatterTooltip({ active, payload }: { active?: boolean; payload?: { pay
   )
 }
 
-export default function MarketContextChart({ stocks, indexPrices }: MarketContextChartProps) {
-  const summary = getMarketContextSummary(stocks, indexPrices)
+export default function MarketContextChart({ stocks, indexPrices, indexKey = 'cyzb', indexName = '创业板指' }: MarketContextChartProps) {
+  const summary = getMarketContextSummary(stocks, indexPrices, indexKey)
   if (summary.batches.length === 0) return <EmptyState />
 
   const { batches, indexSeries, recDates, latestIndexDate } = summary
@@ -74,7 +77,7 @@ export default function MarketContextChart({ stocks, indexPrices }: MarketContex
       {/* Index timeline */}
       <div>
         <p className="mb-1 font-mono text-xs font-semibold uppercase tracking-widest text-gray-500">
-          创业板指走势 · 竖线为推荐时点
+          {indexName}走势 · 竖线为推荐时点
         </p>
         <ResponsiveContainer width="100%" height={220}>
           <ComposedChart data={indexSeries} margin={{ top: 12, right: 16, left: 8, bottom: 16 }}>
@@ -95,7 +98,7 @@ export default function MarketContextChart({ stocks, indexPrices }: MarketContex
               width={48}
             />
             <Tooltip
-              formatter={(v: number) => [v.toFixed(2), '创业板指']}
+              formatter={(v: number) => [v.toFixed(2), indexName]}
               labelFormatter={(l) => `日期：${l}`}
               contentStyle={{ borderRadius: 8, borderColor: '#e5e7eb', fontSize: 12 }}
               cursor={{ stroke: '#d1d5db' }}
@@ -122,7 +125,7 @@ export default function MarketContextChart({ stocks, indexPrices }: MarketContex
       {/* Quadrant scatter */}
       <div>
         <p className="mb-1 font-mono text-xs font-semibold uppercase tracking-widest text-gray-500">
-          推荐批次四象限 · X 轴：推荐后大盘涨跌 · Y 轴：批次个股均值
+          推荐批次四象限 · X 轴：推荐后{indexName}涨跌 · Y 轴：批次个股均值
         </p>
         <ResponsiveContainer width="100%" height={300}>
           <ScatterChart margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
@@ -135,7 +138,7 @@ export default function MarketContextChart({ stocks, indexPrices }: MarketContex
               axisLine={{ stroke: '#e5e7eb' }}
               tickLine={{ stroke: '#e5e7eb' }}
             >
-              <Label value="同期创业板指涨跌幅" offset={-10} position="insideBottom" style={{ fontSize: 10, fill: '#9ca3af' }} />
+              <Label value={`同期${indexName}涨跌幅`} offset={-10} position="insideBottom" style={{ fontSize: 10, fill: '#9ca3af' }} />
             </XAxis>
             <YAxis
               type="number"
@@ -189,7 +192,7 @@ export default function MarketContextChart({ stocks, indexPrices }: MarketContex
               <th className="pb-2 font-mono text-[10px] uppercase tracking-wider">推荐日期</th>
               <th className="pb-2 text-right font-mono text-[10px] uppercase tracking-wider">数量</th>
               <th className="pb-2 text-right font-mono text-[10px] uppercase tracking-wider">个股均值</th>
-              <th className="pb-2 text-right font-mono text-[10px] uppercase tracking-wider">同期创业板指</th>
+              <th className="pb-2 text-right font-mono text-[10px] uppercase tracking-wider">同期{indexName}</th>
               <th className="pb-2 text-right font-mono text-[10px] uppercase tracking-wider">分类</th>
             </tr>
           </thead>

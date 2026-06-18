@@ -193,8 +193,16 @@ export default function App() {
               <IndustryBubbleChart stocks={filteredStocks} showLabels={showBubbleLabels} />
             </SectionCard>
 
-            <SectionCard index={7} title="推荐时点与大盘环境" subtitle="推荐发生时创业板指所处位置，以及各批次在顺风／逆风环境下的表现">
-              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} />
+            <SectionCard index={7} title="推荐时点与大盘环境（创业板指）" subtitle="推荐发生时创业板指所处位置，以及各批次在顺风／逆风环境下的表现">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} indexKey="cyzb" indexName="创业板指" />
+            </SectionCard>
+
+            <SectionCard index={8} title="推荐时点与大盘环境（中证500）" subtitle="以中证500为参照，分析各批次推荐的市场环境与选股表现">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} indexKey="zz500" indexName="中证500" />
+            </SectionCard>
+
+            <SectionCard index={9} title="推荐时点与大盘环境（中证1000）" subtitle="以中证1000为参照，分析各批次推荐的市场环境与选股表现">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} indexKey="zz1000" indexName="中证1000" />
             </SectionCard>
 
             <footer className="py-4 text-center font-mono text-[11px] tracking-wide text-gray-400">

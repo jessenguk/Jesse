@@ -596,15 +596,21 @@ function roundM(n: number, decimals: number): number {
   return Math.round(n * factor) / factor
 }
 
-export function getMarketContextSummary(stocks: StockRecord[], indexPrices: IndexDailyPrice[]): MarketContextSummary {
+export type IndexKey = 'cyzb' | 'zz500' | 'zz1000'
+
+export function getMarketContextSummary(
+  stocks: StockRecord[],
+  indexPrices: IndexDailyPrice[],
+  indexKey: IndexKey = 'cyzb',
+): MarketContextSummary {
   if (stocks.length === 0 || indexPrices.length === 0) {
     return { batches: [], indexSeries: [], recDates: [], latestIndexDate: null }
   }
 
-  const validIndex = indexPrices.filter((p) => p.cyzb !== null)
-  const indexByDate = new Map(validIndex.map((p) => [p.date, p.cyzb!]))
+  const validIndex = indexPrices.filter((p) => p[indexKey] !== null)
+  const indexByDate = new Map(validIndex.map((p) => [p.date, p[indexKey]!]))
   const latestEntry = validIndex[validIndex.length - 1]
-  const latestCyzb = latestEntry?.cyzb ?? null
+  const latestCyzb = latestEntry?.[indexKey] ?? null
   const latestIndexDate = latestEntry?.date ?? null
 
   const byDate = new Map<string, StockRecord[]>()
@@ -620,7 +626,7 @@ export function getMarketContextSummary(stocks: StockRecord[], indexPrices: Inde
     let indexOnDate = indexByDate.get(date) ?? null
     if (indexOnDate === null) {
       const next = validIndex.find((p) => p.date >= date)
-      indexOnDate = next?.cyzb ?? null
+      indexOnDate = next?.[indexKey] ?? null
     }
 
     const marketReturnPct =
@@ -648,7 +654,7 @@ export function getMarketContextSummary(stocks: StockRecord[], indexPrices: Inde
   const earliestRec = batches[0]?.recommendDate ?? ''
   const indexSeries = validIndex
     .filter((p) => p.date >= earliestRec)
-    .map((p) => ({ date: p.date, cyzb: p.cyzb! }))
+    .map((p) => ({ date: p.date, cyzb: p[indexKey]! }))
 
   return { batches, indexSeries, recDates: batches.map((b) => b.recommendDate), latestIndexDate }
 }

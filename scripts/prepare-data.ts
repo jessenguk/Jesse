@@ -88,19 +88,20 @@ function parseIndexPrices(filePath: string): IndexDailyPrice[] {
   const header = (rows[0] as unknown[]).map((h) => String(h ?? '').trim())
   const cyzbIdx = header.findIndex((h) => h.includes('创业板') && !h.includes('涨跌'))
   const zz500Idx = header.findIndex((h) => h.includes('中证500') && !h.includes('涨跌'))
+  const zz1000Idx = header.findIndex((h) => h.includes('中证1000') && !h.includes('涨跌'))
   const result: IndexDailyPrice[] = []
   for (const row of rows.slice(4) as unknown[][]) {
     const rawDate = row[0]
     if (!rawDate || String(rawDate).includes('数据来源')) continue
     const dateStr = String(rawDate).trim()
-    // Format: YYYYMMDD number or string
     const date = dateStr.length === 8
       ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
       : dateStr.slice(0, 10)
     const cyzb = cyzbIdx !== -1 && row[cyzbIdx] !== null ? Number(row[cyzbIdx]) : null
     const zz500 = zz500Idx !== -1 && row[zz500Idx] !== null ? Number(row[zz500Idx]) : null
+    const zz1000 = zz1000Idx !== -1 && row[zz1000Idx] !== null ? Number(row[zz1000Idx]) : null
     if (!date) continue
-    result.push({ date, cyzb, zz500 })
+    result.push({ date, cyzb, zz500, zz1000 })
   }
   result.sort((a, b) => a.date.localeCompare(b.date))
   return result
