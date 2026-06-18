@@ -22,9 +22,20 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   maxReturnPct: ['最高涨幅（%）', '最高涨幅(%)', '最高涨幅'],
   trackingDays: ['距推荐日交易天数', '跟踪天数', '交易天数'],
   dailyReturnPct: ['日均收益率'],
+  settlementDate: ['统计截止日期', '截止跟踪日', '截止日期'],
 }
 
-function findExcelFiles(): { mainFile: string; priceFile: string | null; indexFile: string | null } {
+function getSheetHeaders(filePath: string): Record<string, string[]> {
+  const wb = XLSX.read(fs.readFileSync(filePath), { type: 'buffer' })
+  const result: Record<string, string[]> = {}
+  for (const name of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[name], { header: 1, defval: null })
+    if (rows.length > 0) result[name] = (rows[0] as unknown[]).map((h) => String(h ?? '').trim())
+  }
+  return result
+}
+
+function findExcelFiles(): { mainFile: string; priceFile: string | null; indexFile: string | null; settlementFile: string | null } {
   if (!fs.existsSync(DATA_DIR)) {
     throw new Error(`未找到 data/ 目录，请创建 ${DATA_DIR} 并放入 Excel 数据文件。`)
   }
@@ -40,8 +51,53 @@ function findExcelFiles(): { mainFile: string; priceFile: string | null; indexFi
   if (otherFiles.length === 0) {
     throw new Error('未找到主数据文件（含个股推荐记录的 Excel），请检查 data/ 目录。')
   }
-  otherFiles.sort((a, b) => fs.statSync(path.join(DATA_DIR, b)).mtimeMs - fs.statSync(path.join(DATA_DIR, a)).mtimeMs)
-  return { mainFile: otherFiles[0], priceFile, indexFile }
+
+  // Classify files by inspecting their column headers
+  let mainFile: string | null = null
+  let settlementFile: string | null = null
+  const industryAliases = COLUMN_ALIASES.industry
+  const returnAliases = COLUMN_ALIASES.returnPct
+  const settlementAliases = COLUMN_ALIASES.settlementDate
+
+  for (const f of otherFiles) {
+    const headers = getSheetHeaders(path.join(DATA_DIR, f))
+    const allCols = Object.values(headers).flat()
+    const hasIndustry = industryAliases.some((a) => allCols.includes(a))
+    const hasReturn = returnAliases.some((a) => allCols.includes(a))
+    const hasSettlement = settlementAliases.some((a) => allCols.includes(a))
+    if (!mainFile && hasIndustry && hasReturn) mainFile = f
+    if (!settlementFile && hasSettlement) settlementFile = f
+  }
+
+  if (!mainFile) {
+    // Fallback: newest file
+    otherFiles.sort((a, b) => fs.statSync(path.join(DATA_DIR, b)).mtimeMs - fs.statSync(path.join(DATA_DIR, a)).mtimeMs)
+    mainFile = otherFiles[0]
+  }
+
+  return { mainFile, priceFile, indexFile, settlementFile }
+}
+
+function parseSettlementDates(filePath: string): Map<string, string> {
+  const wb = XLSX.read(fs.readFileSync(filePath), { type: 'buffer' })
+  const result = new Map<string, string>()
+  for (const sheetName of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[sheetName], { header: 1, raw: false, defval: null })
+    if (rows.length < 2) continue
+    const header = (rows[0] as unknown[]).map((h) => String(h ?? '').trim())
+    const codeIdx = header.findIndex((h) => h === '代码' || h === '股票代码')
+    const dateIdx = header.findIndex((h) => COLUMN_ALIASES.recommendDate.includes(h))
+    const settlIdx = header.findIndex((h) => COLUMN_ALIASES.settlementDate.includes(h))
+    if (codeIdx === -1 || dateIdx === -1 || settlIdx === -1) continue
+    for (const row of rows.slice(1) as unknown[][]) {
+      const code = String(row[codeIdx] ?? '').trim().split('.')[0].padStart(6, '0')
+      const recDate = formatDate(row[dateIdx])
+      const settlDate = formatDate(row[settlIdx])
+      if (code && recDate && settlDate) result.set(`${code}|${recDate}`, settlDate)
+    }
+    break
+  }
+  return result
 }
 
 function parseDailyPrices(filePath: string): Record<string, DailyPrice[]> {
@@ -206,7 +262,7 @@ function round(n: number, decimals: number): number {
 
 function main() {
   const warnings: string[] = []
-  const { mainFile: fileName, priceFile, indexFile } = findExcelFiles()
+  const { mainFile: fileName, priceFile, indexFile, settlementFile } = findExcelFiles()
   const filePath = path.join(DATA_DIR, fileName)
   const buffer = fs.readFileSync(filePath)
   const workbook = XLSX.read(buffer, { type: 'buffer' })
@@ -258,6 +314,8 @@ function main() {
       dailyReturnPct = returnPct / trackingDays
     }
 
+    const settlementDate = formatDate(get('settlementDate'))
+
     stocks.push({
       stockName,
       stockCode,
@@ -267,6 +325,7 @@ function main() {
       maxReturnPct: maxReturnPct !== null ? round(maxReturnPct, 2) : null,
       trackingDays,
       dailyReturnPct: dailyReturnPct !== null ? round(dailyReturnPct, 4) : null,
+      settlementDate,
       isPositive: returnPct > 0,
       returnBucket: getReturnBucket(returnPct),
     })
@@ -279,6 +338,20 @@ function main() {
   const noTrackingDays = stocks.filter((s) => s.dailyReturnPct === null).length
   if (noTrackingDays > 0) {
     warnings.push(`${noTrackingDays} 支个股缺少有效的"距推荐日交易天数"，日均收益率显示为 N/A。`)
+  }
+
+  // Merge settlement dates from supplementary file if main file didn't have the column
+  if (settlementFile && stocks.some((s) => s.settlementDate === null)) {
+    const settlMap = parseSettlementDates(path.join(DATA_DIR, settlementFile))
+    let merged = 0
+    for (const stock of stocks) {
+      if (stock.settlementDate === null) {
+        const key = `${stock.stockCode}|${stock.recommendDate}`
+        const found = settlMap.get(key) ?? null
+        if (found) { stock.settlementDate = found; merged++ }
+      }
+    }
+    if (merged > 0) console.log(`从 ${settlementFile} 补充了 ${merged} 条统计截止日期`)
   }
 
   const dailyPrices = priceFile ? parseDailyPrices(path.join(DATA_DIR, priceFile)) : {}

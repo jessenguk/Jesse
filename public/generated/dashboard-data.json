@@ -2,7 +2,7 @@
   "meta": {
     "sourceFile": "副本个股收益可视化分析包_v3b_cleaned.xlsx",
     "sourceSheet": "Data_Master",
-    "generatedAt": "2026-06-18T02:56:22.318Z",
+    "generatedAt": "2026-06-18T07:35:24.681Z",
     "totalRawRows": 53,
     "totalValidRows": 53,
     "columnsUsed": {
@@ -13,9 +13,12 @@
       "returnPct": "区间涨跌幅",
       "maxReturnPct": "最高涨幅（%）",
       "trackingDays": "距推荐日交易天数",
-      "dailyReturnPct": "日均收益率"
+      "dailyReturnPct": "日均收益率",
+      "settlementDate": null
     },
-    "warnings": []
+    "warnings": [
+      "未找到可选列「settlementDate」（候选列名：统计截止日期、截止跟踪日、截止日期），该字段将显示为 N/A。"
+    ]
   },
   "stocks": [
     {
@@ -27,6 +30,7 @@
       "maxReturnPct": 11.07,
       "trackingDays": 10,
       "dailyReturnPct": 1.099,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "10~20%"
     },
@@ -39,6 +43,7 @@
       "maxReturnPct": 10,
       "trackingDays": 1,
       "dailyReturnPct": 0.4393,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -51,6 +56,7 @@
       "maxReturnPct": 7.35,
       "trackingDays": 30,
       "dailyReturnPct": 0.0236,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -63,6 +69,7 @@
       "maxReturnPct": 17.24,
       "trackingDays": 43,
       "dailyReturnPct": 0.4527,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "10~20%"
     },
@@ -75,6 +82,7 @@
       "maxReturnPct": 14.97,
       "trackingDays": 2,
       "dailyReturnPct": 13.3527,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "20~50%"
     },
@@ -87,6 +95,7 @@
       "maxReturnPct": 10.01,
       "trackingDays": 35,
       "dailyReturnPct": 2.2737,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": ">50%"
     },
@@ -99,6 +108,7 @@
       "maxReturnPct": 9.43,
       "trackingDays": 23,
       "dailyReturnPct": -0.3518,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-10~0%"
     },
@@ -111,6 +121,7 @@
       "maxReturnPct": 7.84,
       "trackingDays": 13,
       "dailyReturnPct": -0.9179,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -123,6 +134,7 @@
       "maxReturnPct": 16.49,
       "trackingDays": 1,
       "dailyReturnPct": 10.7732,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "10~20%"
     },
@@ -135,6 +147,7 @@
       "maxReturnPct": 16.31,
       "trackingDays": 41,
       "dailyReturnPct": 0.3363,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "10~20%"
     },
@@ -147,6 +160,7 @@
       "maxReturnPct": 8.12,
       "trackingDays": 23,
       "dailyReturnPct": -1.029,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-30~-20%"
     },
@@ -159,6 +173,7 @@
       "maxReturnPct": 10.05,
       "trackingDays": 6,
       "dailyReturnPct": 1.2456,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -171,6 +186,7 @@
       "maxReturnPct": 10.01,
       "trackingDays": 33,
       "dailyReturnPct": -0.3442,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -183,6 +199,7 @@
       "maxReturnPct": 7.93,
       "trackingDays": 31,
       "dailyReturnPct": -0.3602,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -195,6 +212,7 @@
       "maxReturnPct": 9.85,
       "trackingDays": 21,
       "dailyReturnPct": -0.5338,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -207,6 +225,7 @@
       "maxReturnPct": 13.95,
       "trackingDays": 22,
       "dailyReturnPct": 0.0762,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -219,6 +238,7 @@
       "maxReturnPct": 13.23,
       "trackingDays": 22,
       "dailyReturnPct": -0.2885,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-10~0%"
     },
@@ -231,6 +251,7 @@
       "maxReturnPct": 8.04,
       "trackingDays": 22,
       "dailyReturnPct": -0.3712,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-10~0%"
     },
@@ -243,6 +264,7 @@
       "maxReturnPct": 7.07,
       "trackingDays": 22,
       "dailyReturnPct": -0.4745,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -255,6 +277,7 @@
       "maxReturnPct": 8.03,
       "trackingDays": 22,
       "dailyReturnPct": 0.0319,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -267,6 +290,7 @@
       "maxReturnPct": 11.41,
       "trackingDays": 28,
       "dailyReturnPct": -1.4211,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "<-30%"
     },
@@ -279,6 +303,7 @@
       "maxReturnPct": 5.03,
       "trackingDays": 10,
       "dailyReturnPct": -1.1924,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -291,6 +316,7 @@
       "maxReturnPct": 8.23,
       "trackingDays": 5,
       "dailyReturnPct": 0.8622,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -303,6 +329,7 @@
       "maxReturnPct": 5.34,
       "trackingDays": 9,
       "dailyReturnPct": -1.7533,
+      "settlementDate": "2026-05-07",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -315,6 +342,7 @@
       "maxReturnPct": 6.23,
       "trackingDays": 12,
       "dailyReturnPct": 0.5046,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -327,6 +355,7 @@
       "maxReturnPct": 9.39,
       "trackingDays": 23,
       "dailyReturnPct": 1.4333,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "20~50%"
     },
@@ -339,6 +368,7 @@
       "maxReturnPct": 16.26,
       "trackingDays": 21,
       "dailyReturnPct": 2.4326,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": ">50%"
     },
@@ -351,6 +381,7 @@
       "maxReturnPct": 10,
       "trackingDays": 1,
       "dailyReturnPct": 76.0237,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": ">50%"
     },
@@ -363,6 +394,7 @@
       "maxReturnPct": 20,
       "trackingDays": 1,
       "dailyReturnPct": 29.8332,
+      "settlementDate": "2026-05-07",
       "isPositive": true,
       "returnBucket": "20~50%"
     },
@@ -375,6 +407,7 @@
       "maxReturnPct": 4.91,
       "trackingDays": 12,
       "dailyReturnPct": -0.9902,
+      "settlementDate": "2026-05-14",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -387,6 +420,7 @@
       "maxReturnPct": 10,
       "trackingDays": 18,
       "dailyReturnPct": 0.5269,
+      "settlementDate": "2026-05-14",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -399,6 +433,7 @@
       "maxReturnPct": 20,
       "trackingDays": 3,
       "dailyReturnPct": 17.88,
+      "settlementDate": "2026-05-14",
       "isPositive": true,
       "returnBucket": ">50%"
     },
@@ -411,6 +446,7 @@
       "maxReturnPct": 20,
       "trackingDays": 1,
       "dailyReturnPct": 19.9825,
+      "settlementDate": "2026-05-14",
       "isPositive": true,
       "returnBucket": "10~20%"
     },
@@ -423,6 +459,7 @@
       "maxReturnPct": 9.4,
       "trackingDays": 21,
       "dailyReturnPct": 1.3085,
+      "settlementDate": "2026-05-15",
       "isPositive": true,
       "returnBucket": "20~50%"
     },
@@ -435,6 +472,7 @@
       "maxReturnPct": 7.47,
       "trackingDays": 21,
       "dailyReturnPct": 0.8005,
+      "settlementDate": "2026-05-15",
       "isPositive": true,
       "returnBucket": "10~20%"
     },
@@ -447,6 +485,7 @@
       "maxReturnPct": 4.27,
       "trackingDays": 13,
       "dailyReturnPct": -0.8792,
+      "settlementDate": "2026-05-20",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -459,6 +498,7 @@
       "maxReturnPct": 2.8,
       "trackingDays": 16,
       "dailyReturnPct": -1.6232,
+      "settlementDate": "2026-05-20",
       "isPositive": false,
       "returnBucket": "-30~-20%"
     },
@@ -471,6 +511,7 @@
       "maxReturnPct": 9.59,
       "trackingDays": 11,
       "dailyReturnPct": 0.1617,
+      "settlementDate": "2026-05-22",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -483,6 +524,7 @@
       "maxReturnPct": 10,
       "trackingDays": 3,
       "dailyReturnPct": 1.1278,
+      "settlementDate": "2026-05-22",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -495,6 +537,7 @@
       "maxReturnPct": 2.27,
       "trackingDays": 10,
       "dailyReturnPct": -1.25,
+      "settlementDate": "2026-05-22",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -507,6 +550,7 @@
       "maxReturnPct": 1.8,
       "trackingDays": 4,
       "dailyReturnPct": -4.2623,
+      "settlementDate": "2026-05-22",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -519,6 +563,7 @@
       "maxReturnPct": 8.81,
       "trackingDays": 20,
       "dailyReturnPct": -0.8077,
+      "settlementDate": "2026-05-22",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -531,6 +576,7 @@
       "maxReturnPct": 10,
       "trackingDays": 5,
       "dailyReturnPct": 0.5372,
+      "settlementDate": "2026-05-22",
       "isPositive": true,
       "returnBucket": "0~10%"
     },
@@ -543,6 +589,7 @@
       "maxReturnPct": 6.24,
       "trackingDays": 21,
       "dailyReturnPct": -0.3571,
+      "settlementDate": "2026-05-28",
       "isPositive": false,
       "returnBucket": "-10~0%"
     },
@@ -555,6 +602,7 @@
       "maxReturnPct": 10.1,
       "trackingDays": 21,
       "dailyReturnPct": -0.221,
+      "settlementDate": "2026-05-28",
       "isPositive": false,
       "returnBucket": "-10~0%"
     },
@@ -567,6 +615,7 @@
       "maxReturnPct": 4.23,
       "trackingDays": 20,
       "dailyReturnPct": -0.6591,
+      "settlementDate": "2026-05-28",
       "isPositive": false,
       "returnBucket": "-20~-10%"
     },
@@ -579,6 +628,7 @@
       "maxReturnPct": 10,
       "trackingDays": 12,
       "dailyReturnPct": 1.3452,
+      "settlementDate": "2026-05-28",
       "isPositive": true,
       "returnBucket": "10~20%"
     },
@@ -591,6 +641,7 @@
       "maxReturnPct": 15.96,
       "trackingDays": 9,
       "dailyReturnPct": 3.1481,
+      "settlementDate": "2026-06-05",
       "isPositive": true,
       "returnBucket": "20~50%"
     },
@@ -603,6 +654,7 @@
       "maxReturnPct": 11.99,
       "trackingDays": 22,
       "dailyReturnPct": 1.5591,
+      "settlementDate": "2026-06-05",
       "isPositive": true,
       "returnBucket": "20~50%"
     },
@@ -615,6 +667,7 @@
       "maxReturnPct": 4.32,
       "trackingDays": 2,
       "dailyReturnPct": -16.6985,
+      "settlementDate": "2026-06-11",
       "isPositive": false,
       "returnBucket": "<-30%"
     },
@@ -627,6 +680,7 @@
       "maxReturnPct": 7.1,
       "trackingDays": 12,
       "dailyReturnPct": -3.9341,
+      "settlementDate": "2026-06-11",
       "isPositive": false,
       "returnBucket": "<-30%"
     },
@@ -639,6 +693,7 @@
       "maxReturnPct": 8.23,
       "trackingDays": 3,
       "dailyReturnPct": -3.3209,
+      "settlementDate": "2026-06-11",
       "isPositive": false,
       "returnBucket": "-10~0%"
     },
@@ -651,6 +706,7 @@
       "maxReturnPct": 1.56,
       "trackingDays": 7,
       "dailyReturnPct": -3.9075,
+      "settlementDate": "2026-06-11",
       "isPositive": false,
       "returnBucket": "-30~-20%"
     }

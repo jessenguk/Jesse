@@ -21,6 +21,7 @@ export interface StockRecord {
   maxReturnPct: number | null
   trackingDays: number | null
   dailyReturnPct: number | null
+  settlementDate: string | null
   isPositive: boolean
   returnBucket: ReturnBucket
 }

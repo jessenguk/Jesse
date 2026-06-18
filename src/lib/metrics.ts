@@ -610,7 +610,6 @@ export function getMarketContextSummary(
   const validIndex = indexPrices.filter((p) => p[indexKey] !== null)
   const indexByDate = new Map(validIndex.map((p) => [p.date, p[indexKey]!]))
   const latestEntry = validIndex[validIndex.length - 1]
-  const latestCyzb = latestEntry?.[indexKey] ?? null
   const latestIndexDate = latestEntry?.date ?? null
 
   const byDate = new Map<string, StockRecord[]>()
@@ -629,9 +628,21 @@ export function getMarketContextSummary(
       indexOnDate = next?.[indexKey] ?? null
     }
 
+    // Use the batch's own settlement date (from Excel) as the index endpoint
+    const settlementDate = batchStocks[0]?.settlementDate ?? null
+    let indexOnSettlement: number | null = null
+    if (settlementDate) {
+      indexOnSettlement = indexByDate.get(settlementDate) ?? null
+      if (indexOnSettlement === null) {
+        // Find nearest trading day on or before settlement date
+        const candidates = validIndex.filter((p) => p.date <= settlementDate)
+        indexOnSettlement = candidates.length > 0 ? candidates[candidates.length - 1][indexKey] : null
+      }
+    }
+
     const marketReturnPct =
-      indexOnDate !== null && latestCyzb !== null
-        ? roundM(((latestCyzb - indexOnDate) / indexOnDate) * 100, 2)
+      indexOnDate !== null && indexOnSettlement !== null
+        ? roundM(((indexOnSettlement - indexOnDate) / indexOnDate) * 100, 2)
         : null
 
     let quadrant: MarketContextBatch['quadrant'] = null
