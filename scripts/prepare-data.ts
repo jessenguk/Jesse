@@ -351,8 +351,10 @@ function main() {
   const dataRows = rows.slice(1)
   const { map, used } = buildColumnMap(header)
 
+  const SUPPLEMENTARY_FIELDS = ['settlementDate'] // sourced from supplementary files, not main
   for (const [field, colName] of Object.entries(used)) {
     if (colName !== null) continue
+    if (SUPPLEMENTARY_FIELDS.includes(field)) continue
     if ((REQUIRED_FIELDS as readonly string[]).includes(field)) {
       warnings.push(`未找到必需列「${field}」（候选列名：${COLUMN_ALIASES[field].join('、')}），相关行将被忽略。`)
     } else {

@@ -2,7 +2,7 @@
   "meta": {
     "sourceFile": "副本个股收益可视化分析包_v3b_cleaned.xlsx",
     "sourceSheet": "Data_Master",
-    "generatedAt": "2026-06-18T09:02:18.582Z",
+    "generatedAt": "2026-06-18T09:07:36.267Z",
     "totalRawRows": 53,
     "totalValidRows": 53,
     "columnsUsed": {
@@ -16,9 +16,7 @@
       "dailyReturnPct": "日均收益率",
       "settlementDate": null
     },
-    "warnings": [
-      "未找到可选列「settlementDate」（候选列名：截止跟踪日、统计截止日期、截止日期），该字段将显示为 N/A。"
-    ]
+    "warnings": []
   },
   "stocks": [
     {
