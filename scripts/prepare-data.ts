@@ -6,7 +6,7 @@
 import fs from 'fs'
 import path from 'path'
 import * as XLSX from 'xlsx'
-import { type DashboardData, type StockRecord, getReturnBucket } from '../src/lib/types'
+import { type DashboardData, type DailyPrice, type IndexDailyPrice, type StockRecord, getReturnBucket } from '../src/lib/types'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 const OUTPUT_PATH = path.join(process.cwd(), 'public', 'generated', 'dashboard-data.json')
@@ -24,7 +24,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   dailyReturnPct: ['日均收益率'],
 }
 
-function findExcelFile(): string {
+function findExcelFiles(): { mainFile: string; priceFile: string | null; indexFile: string | null } {
   if (!fs.existsSync(DATA_DIR)) {
     throw new Error(`未找到 data/ 目录，请创建 ${DATA_DIR} 并放入 Excel 数据文件。`)
   }
@@ -34,8 +34,76 @@ function findExcelFile(): string {
   if (files.length === 0) {
     throw new Error(`未在 data/ 目录中找到 .xlsx 文件，请将 Excel 数据文件放入 ${DATA_DIR}`)
   }
-  files.sort((a, b) => fs.statSync(path.join(DATA_DIR, b)).mtimeMs - fs.statSync(path.join(DATA_DIR, a)).mtimeMs)
-  return files[0]
+  const priceFile = files.find((f) => f.includes('行情序列')) ?? null
+  const indexFile = files.find((f) => f.includes('指数')) ?? null
+  const otherFiles = files.filter((f) => f !== priceFile && f !== indexFile)
+  if (otherFiles.length === 0) {
+    throw new Error('未找到主数据文件（含个股推荐记录的 Excel），请检查 data/ 目录。')
+  }
+  otherFiles.sort((a, b) => fs.statSync(path.join(DATA_DIR, b)).mtimeMs - fs.statSync(path.join(DATA_DIR, a)).mtimeMs)
+  return { mainFile: otherFiles[0], priceFile, indexFile }
+}
+
+function parseDailyPrices(filePath: string): Record<string, DailyPrice[]> {
+  const buffer = fs.readFileSync(filePath)
+  const wb = XLSX.read(buffer, { type: 'buffer', cellDates: true })
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: null })
+  // Expected columns: 代码, 简称, 时间, 收盘价(元), ...
+  const header = (rows[0] as string[]).map((h) => String(h ?? '').trim())
+  const codeIdx = header.findIndex((h) => h === '代码')
+  const dateIdx = header.findIndex((h) => h === '时间')
+  const closeIdx = header.findIndex((h) => h.includes('收盘价'))
+  if (codeIdx === -1 || dateIdx === -1 || closeIdx === -1) {
+    throw new Error('行情序列文件缺少必要列（代码/时间/收盘价），请检查导出格式。')
+  }
+  const result: Record<string, DailyPrice[]> = {}
+  for (const row of rows.slice(1) as unknown[][]) {
+    const rawCode = String(row[codeIdx] ?? '').trim()
+    const rawDate = String(row[dateIdx] ?? '').trim()
+    const rawClose = row[closeIdx]
+    if (!rawCode || !rawDate || rawClose === null) continue
+    // Code: strip exchange suffix (300285.SZ -> 300285)
+    const code = rawCode.split('.')[0]
+    // Date: may be ISO string from cellDates:true
+    const date = rawDate.slice(0, 10)
+    const close = typeof rawClose === 'number' ? rawClose : parseFloat(String(rawClose))
+    if (Number.isNaN(close)) continue
+    if (!result[code]) result[code] = []
+    result[code].push({ date, close })
+  }
+  // Sort each series by date ascending
+  for (const code of Object.keys(result)) {
+    result[code].sort((a, b) => a.date.localeCompare(b.date))
+  }
+  return result
+}
+
+function parseIndexPrices(filePath: string): IndexDailyPrice[] {
+  const buffer = fs.readFileSync(filePath)
+  const wb = XLSX.read(buffer, { type: 'buffer' })
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: true, defval: null })
+  // Row 0: header names, rows 1-3: 频率/单位/指标ID, row 4+: data
+  const header = (rows[0] as unknown[]).map((h) => String(h ?? '').trim())
+  const cyzbIdx = header.findIndex((h) => h.includes('创业板') && !h.includes('涨跌'))
+  const zz500Idx = header.findIndex((h) => h.includes('中证500') && !h.includes('涨跌'))
+  const result: IndexDailyPrice[] = []
+  for (const row of rows.slice(4) as unknown[][]) {
+    const rawDate = row[0]
+    if (!rawDate || String(rawDate).includes('数据来源')) continue
+    const dateStr = String(rawDate).trim()
+    // Format: YYYYMMDD number or string
+    const date = dateStr.length === 8
+      ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
+      : dateStr.slice(0, 10)
+    const cyzb = cyzbIdx !== -1 && row[cyzbIdx] !== null ? Number(row[cyzbIdx]) : null
+    const zz500 = zz500Idx !== -1 && row[zz500Idx] !== null ? Number(row[zz500Idx]) : null
+    if (!date) continue
+    result.push({ date, cyzb, zz500 })
+  }
+  result.sort((a, b) => a.date.localeCompare(b.date))
+  return result
 }
 
 function selectSheet(workbook: XLSX.WorkBook): { sheetName: string; rows: unknown[][] } {
@@ -137,7 +205,7 @@ function round(n: number, decimals: number): number {
 
 function main() {
   const warnings: string[] = []
-  const fileName = findExcelFile()
+  const { mainFile: fileName, priceFile, indexFile } = findExcelFiles()
   const filePath = path.join(DATA_DIR, fileName)
   const buffer = fs.readFileSync(filePath)
   const workbook = XLSX.read(buffer, { type: 'buffer' })
@@ -212,6 +280,12 @@ function main() {
     warnings.push(`${noTrackingDays} 支个股缺少有效的"距推荐日交易天数"，日均收益率显示为 N/A。`)
   }
 
+  const dailyPrices = priceFile ? parseDailyPrices(path.join(DATA_DIR, priceFile)) : {}
+  const indexPrices = indexFile ? parseIndexPrices(path.join(DATA_DIR, indexFile)) : []
+
+  if (!priceFile) warnings.push('未找到行情序列文件（文件名需含"行情序列"），日线数据将缺失。')
+  if (!indexFile) warnings.push('未找到指数文件（文件名需含"指数"），指数数据将缺失。')
+
   const output: DashboardData = {
     meta: {
       sourceFile: fileName,
@@ -223,6 +297,8 @@ function main() {
       warnings,
     },
     stocks,
+    dailyPrices,
+    indexPrices,
   }
 
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true })

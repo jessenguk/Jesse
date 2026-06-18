@@ -1,4 +1,4 @@
-import { RETURN_BUCKETS, type ReturnBucket, type StockRecord } from './types'
+import { RETURN_BUCKETS, type IndexDailyPrice, type ReturnBucket, type StockRecord } from './types'
 
 export const COLOR_POSITIVE = '#dc2626' // red — positive return
 export const COLOR_NEGATIVE = '#16a34a' // green — negative return
@@ -569,5 +569,116 @@ export function getCoreInsights(stocks: StockRecord[]): string[] {
       : `正收益占比 ${ratioPct.toFixed(1)}%，未达半数，整体呈现分化格局。`,
   )
 
+  return insights
+}
+
+// ---------------------------------------------------------------------------
+// Section 10: Market context — 推荐时点与大盘环境
+
+export interface MarketContextBatch {
+  recommendDate: string
+  shortLabel: string
+  stockCount: number
+  avgStockReturn: number
+  marketReturnPct: number | null
+  quadrant: '逆风好选' | '逆风差选' | '顺风好选' | '顺风差选' | null
+}
+
+export interface MarketContextSummary {
+  batches: MarketContextBatch[]
+  indexSeries: { date: string; cyzb: number }[]
+  recDates: string[]
+  latestIndexDate: string | null
+}
+
+function roundM(n: number, decimals: number): number {
+  const factor = 10 ** decimals
+  return Math.round(n * factor) / factor
+}
+
+export function getMarketContextSummary(stocks: StockRecord[], indexPrices: IndexDailyPrice[]): MarketContextSummary {
+  if (stocks.length === 0 || indexPrices.length === 0) {
+    return { batches: [], indexSeries: [], recDates: [], latestIndexDate: null }
+  }
+
+  const validIndex = indexPrices.filter((p) => p.cyzb !== null)
+  const indexByDate = new Map(validIndex.map((p) => [p.date, p.cyzb!]))
+  const latestEntry = validIndex[validIndex.length - 1]
+  const latestCyzb = latestEntry?.cyzb ?? null
+  const latestIndexDate = latestEntry?.date ?? null
+
+  const byDate = new Map<string, StockRecord[]>()
+  for (const s of stocks) {
+    if (!byDate.has(s.recommendDate)) byDate.set(s.recommendDate, [])
+    byDate.get(s.recommendDate)!.push(s)
+  }
+
+  const batches: MarketContextBatch[] = []
+  for (const [date, batchStocks] of [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const avgStockReturn = roundM(batchStocks.reduce((sum, s) => sum + s.returnPct, 0) / batchStocks.length, 2)
+
+    let indexOnDate = indexByDate.get(date) ?? null
+    if (indexOnDate === null) {
+      const next = validIndex.find((p) => p.date >= date)
+      indexOnDate = next?.cyzb ?? null
+    }
+
+    const marketReturnPct =
+      indexOnDate !== null && latestCyzb !== null
+        ? roundM(((latestCyzb - indexOnDate) / indexOnDate) * 100, 2)
+        : null
+
+    let quadrant: MarketContextBatch['quadrant'] = null
+    if (marketReturnPct !== null) {
+      const marketUp = marketReturnPct >= 0
+      const stockUp = avgStockReturn >= 0
+      quadrant = marketUp ? (stockUp ? '顺风好选' : '顺风差选') : stockUp ? '逆风好选' : '逆风差选'
+    }
+
+    batches.push({
+      recommendDate: date,
+      shortLabel: date.slice(5).replace('-', '/'),
+      stockCount: batchStocks.length,
+      avgStockReturn,
+      marketReturnPct,
+      quadrant,
+    })
+  }
+
+  const earliestRec = batches[0]?.recommendDate ?? ''
+  const indexSeries = validIndex
+    .filter((p) => p.date >= earliestRec)
+    .map((p) => ({ date: p.date, cyzb: p.cyzb! }))
+
+  return { batches, indexSeries, recDates: batches.map((b) => b.recommendDate), latestIndexDate }
+}
+
+export function getMarketContextInsights(summary: MarketContextSummary): string[] {
+  const { batches } = summary
+  const withMarket = batches.filter((b) => b.marketReturnPct !== null)
+  if (withMarket.length === 0) return []
+
+  const insights: string[] = []
+  const headwind = withMarket.filter((b) => b.marketReturnPct! < 0)
+  const headwindPositive = headwind.filter((b) => b.avgStockReturn > 0)
+  const tailwind = withMarket.filter((b) => b.marketReturnPct! >= 0)
+  const tailwindPositive = tailwind.filter((b) => b.avgStockReturn > 0)
+
+  if (headwind.length > 0) {
+    insights.push(
+      `${headwind.length} 个批次面临逆风（推荐后大盘下行），其中 ${headwindPositive.length} 个仍取得正收益——逆风选股成功率 ${((headwindPositive.length / headwind.length) * 100).toFixed(0)}%。`,
+    )
+  }
+  if (tailwind.length > 0) {
+    insights.push(
+      `${tailwind.length} 个批次顺风（大盘上行），其中 ${tailwindPositive.length} 个个股同步正收益。`,
+    )
+  }
+  const best = [...withMarket].sort((a, b) => b.avgStockReturn - a.avgStockReturn)[0]
+  if (best) {
+    insights.push(
+      `表现最佳批次 ${best.recommendDate}：个股均值 ${formatPct(best.avgStockReturn)}，同期创业板指 ${formatPct(best.marketReturnPct)}。`,
+    )
+  }
   return insights
 }

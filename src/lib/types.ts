@@ -35,9 +35,22 @@ export interface DashboardMeta {
   warnings: string[]
 }
 
+export interface DailyPrice {
+  date: string
+  close: number
+}
+
+export interface IndexDailyPrice {
+  date: string
+  cyzb: number | null
+  zz500: number | null
+}
+
 export interface DashboardData {
   meta: DashboardMeta
   stocks: StockRecord[]
+  dailyPrices: Record<string, DailyPrice[]>
+  indexPrices: IndexDailyPrice[]
 }
 
 export function getReturnBucket(returnPct: number): ReturnBucket {

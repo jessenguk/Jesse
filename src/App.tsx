@@ -7,6 +7,7 @@ import IndustryAverageChart from './components/IndustryAverageChart'
 import MaxReturnTimingChart from './components/MaxReturnTimingChart'
 import BatchWaterfallChart from './components/BatchWaterfallChart'
 import IndustryBubbleChart from './components/IndustryBubbleChart'
+import MarketContextChart from './components/MarketContextChart'
 import SectionCard from './components/SectionCard'
 import { useDashboardData } from './lib/data'
 import { getUniqueDates, getUniqueIndustries } from './lib/metrics'
@@ -22,6 +23,7 @@ export default function App() {
   const [showBubbleLabels, setShowBubbleLabels] = useState(true)
 
   const stocks = dataState.status === 'ready' ? dataState.data.stocks : []
+  const indexPrices = dataState.status === 'ready' ? dataState.data.indexPrices : []
 
   const industries = useMemo(() => getUniqueIndustries(stocks), [stocks])
   const dates = useMemo(() => getUniqueDates(stocks), [stocks])
@@ -189,7 +191,10 @@ export default function App() {
 
             <SectionCard index={6} title="行业四维气泡图" subtitle="X：平均收益　Y：正收益占比　气泡大小：股票数量　颜色：行业弹性">
               <IndustryBubbleChart stocks={filteredStocks} showLabels={showBubbleLabels} />
+            </SectionCard>
 
+            <SectionCard index={7} title="推荐时点与大盘环境" subtitle="推荐发生时创业板指所处位置，以及各批次在顺风／逆风环境下的表现">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} />
             </SectionCard>
 
             <footer className="py-4 text-center font-mono text-[11px] tracking-wide text-gray-400">
