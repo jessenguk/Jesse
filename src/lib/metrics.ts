@@ -586,7 +586,7 @@ export interface MarketContextBatch {
 
 export interface MarketContextSummary {
   batches: MarketContextBatch[]
-  indexSeries: { date: string; cyzb: number }[]
+  indexSeries: { date: string; value: number }[]
   recDates: string[]
   latestIndexDate: string | null
 }
@@ -596,12 +596,12 @@ function roundM(n: number, decimals: number): number {
   return Math.round(n * factor) / factor
 }
 
-export type IndexKey = 'cyzb' | 'zz500' | 'zz1000'
+export type IndexKey = 'shzs' | 'zz500' | 'kcgz'
 
 export function getMarketContextSummary(
   stocks: StockRecord[],
   indexPrices: IndexDailyPrice[],
-  indexKey: IndexKey = 'cyzb',
+  indexKey: IndexKey = 'shzs',
 ): MarketContextSummary {
   if (stocks.length === 0 || indexPrices.length === 0) {
     return { batches: [], indexSeries: [], recDates: [], latestIndexDate: null }
@@ -665,7 +665,7 @@ export function getMarketContextSummary(
   const earliestRec = batches[0]?.recommendDate ?? ''
   const indexSeries = validIndex
     .filter((p) => p.date >= earliestRec)
-    .map((p) => ({ date: p.date, cyzb: p[indexKey]! }))
+    .map((p) => ({ date: p.date, value: p[indexKey]! }))
 
   return { batches, indexSeries, recDates: batches.map((b) => b.recommendDate), latestIndexDate }
 }

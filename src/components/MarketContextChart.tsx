@@ -59,7 +59,7 @@ function ScatterTooltip({ active, payload }: { active?: boolean; payload?: { pay
   )
 }
 
-export default function MarketContextChart({ stocks, indexPrices, indexKey = 'cyzb', indexName = '创业板指' }: MarketContextChartProps) {
+export default function MarketContextChart({ stocks, indexPrices, indexKey = 'shzs', indexName = '上证综指' }: MarketContextChartProps) {
   const summary = getMarketContextSummary(stocks, indexPrices, indexKey)
   if (summary.batches.length === 0) return <EmptyState />
 
@@ -107,7 +107,7 @@ export default function MarketContextChart({ stocks, indexPrices, indexKey = 'cy
               <ReferenceLine key={date} x={date} stroke={COLOR_NEUTRAL} strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.6} />
             ))}
             <Line
-              dataKey="cyzb"
+              dataKey="value"
               dot={false}
               stroke={COLOR_NEUTRAL}
               strokeWidth={2}

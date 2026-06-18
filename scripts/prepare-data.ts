@@ -35,7 +35,7 @@ function getSheetHeaders(filePath: string): Record<string, string[]> {
   return result
 }
 
-function findExcelFiles(): { mainFile: string; priceFile: string | null; indexFile: string | null; settlementFile: string | null } {
+function findExcelFiles(): { mainFile: string; priceFile: string | null; halfYearFile: string | null; shzsFile: string | null; kcgzFile: string | null; settlementFile: string | null } {
   if (!fs.existsSync(DATA_DIR)) {
     throw new Error(`未找到 data/ 目录，请创建 ${DATA_DIR} 并放入 Excel 数据文件。`)
   }
@@ -46,8 +46,11 @@ function findExcelFiles(): { mainFile: string; priceFile: string | null; indexFi
     throw new Error(`未在 data/ 目录中找到 .xlsx 文件，请将 Excel 数据文件放入 ${DATA_DIR}`)
   }
   const priceFile = files.find((f) => f.includes('行情序列')) ?? null
-  const indexFile = files.find((f) => f.includes('指数')) ?? null
-  const otherFiles = files.filter((f) => f !== priceFile && f !== indexFile)
+  const halfYearFile = files.find((f) => f.includes('半年指数')) ?? null
+  const shzsFile = files.find((f) => f.includes('上证综合指数') || f.includes('上证综指')) ?? null
+  const kcgzFile = files.find((f) => f.includes('科创综指') || f.includes('科创综')) ?? null
+  const indexFiles = new Set([halfYearFile, shzsFile, kcgzFile].filter(Boolean))
+  const otherFiles = files.filter((f) => f !== priceFile && !indexFiles.has(f))
   if (otherFiles.length === 0) {
     throw new Error('未找到主数据文件（含个股推荐记录的 Excel），请检查 data/ 目录。')
   }
@@ -75,7 +78,7 @@ function findExcelFiles(): { mainFile: string; priceFile: string | null; indexFi
     mainFile = otherFiles[0]
   }
 
-  return { mainFile, priceFile, indexFile, settlementFile }
+  return { mainFile, priceFile, halfYearFile, shzsFile, kcgzFile, settlementFile }
 }
 
 function parseSettlementDates(filePath: string): Map<string, string> {
@@ -140,32 +143,100 @@ function parseDailyPrices(filePath: string): Record<string, DailyPrice[]> {
   return result
 }
 
-function parseIndexPrices(filePath: string): IndexDailyPrice[] {
+/** Parse wide-format index file (行/指数 = 频率/单位/ID metadata + YYYYMMDD rows).
+ *  Returns a map of date -> { colName -> value } for matched columns. */
+function parseWideIndexFile(filePath: string, colMatchers: Record<string, (h: string) => boolean>): Map<string, Record<string, number>> {
   const buffer = fs.readFileSync(filePath)
   const wb = XLSX.read(buffer, { type: 'buffer' })
   const ws = wb.Sheets[wb.SheetNames[0]]
   const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: true, defval: null })
-  // Row 0: header names, rows 1-3: 频率/单位/指标ID, row 4+: data
   const header = (rows[0] as unknown[]).map((h) => String(h ?? '').trim())
-  const cyzbIdx = header.findIndex((h) => h.includes('创业板') && !h.includes('涨跌'))
-  const zz500Idx = header.findIndex((h) => h.includes('中证500') && !h.includes('涨跌'))
-  const zz1000Idx = header.findIndex((h) => h.includes('中证1000') && !h.includes('涨跌'))
-  const result: IndexDailyPrice[] = []
-  for (const row of rows.slice(4) as unknown[][]) {
-    const rawDate = row[0]
-    if (!rawDate || String(rawDate).includes('数据来源')) continue
-    const dateStr = String(rawDate).trim()
-    const date = dateStr.length === 8
-      ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
-      : dateStr.slice(0, 10)
-    const cyzb = cyzbIdx !== -1 && row[cyzbIdx] !== null ? Number(row[cyzbIdx]) : null
-    const zz500 = zz500Idx !== -1 && row[zz500Idx] !== null ? Number(row[zz500Idx]) : null
-    const zz1000 = zz1000Idx !== -1 && row[zz1000Idx] !== null ? Number(row[zz1000Idx]) : null
-    if (!date) continue
-    result.push({ date, cyzb, zz500, zz1000 })
+  const colIdxMap: Record<string, number> = {}
+  for (const [key, matcher] of Object.entries(colMatchers)) {
+    const idx = header.findIndex((h) => matcher(h))
+    if (idx !== -1) colIdxMap[key] = idx
   }
-  result.sort((a, b) => a.date.localeCompare(b.date))
+  const result = new Map<string, Record<string, number>>()
+  // Data starts after metadata rows — skip rows until we see an 8-digit date in col 0
+  for (const row of rows.slice(1) as unknown[][]) {
+    const rawDate = String(row[0] ?? '').trim()
+    if (!/^\d{8}$/.test(rawDate)) continue
+    const date = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
+    const entry: Record<string, number> = {}
+    for (const [key, idx] of Object.entries(colIdxMap)) {
+      const val = row[idx]
+      if (val !== null && val !== undefined) {
+        const n = typeof val === 'number' ? val : parseFloat(String(val).replace(/,/g, ''))
+        if (!Number.isNaN(n)) entry[key] = n
+      }
+    }
+    if (Object.keys(entry).length > 0) result.set(date, entry)
+  }
   return result
+}
+
+/** Parse narrow-format index file (科创综指 style: 交易日期 / 收盘价 columns). */
+function parseNarrowIndexFile(filePath: string, key: string): Map<string, number> {
+  const buffer = fs.readFileSync(filePath)
+  const wb = XLSX.read(buffer, { type: 'buffer' })
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: null })
+  const header = (rows[0] as unknown[]).map((h) => String(h ?? '').trim())
+  const dateIdx = header.findIndex((h) => h.includes('交易日期') || h.includes('日期'))
+  const closeIdx = header.findIndex((h) => h === '收盘价' || h.includes('收盘'))
+  const result = new Map<string, number>()
+  if (dateIdx === -1 || closeIdx === -1) return result
+  for (const row of rows.slice(1) as unknown[][]) {
+    const rawDate = String(row[dateIdx] ?? '').trim().slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) continue
+    const rawVal = String(row[closeIdx] ?? '').replace(/,/g, '')
+    const n = parseFloat(rawVal)
+    if (!Number.isNaN(n)) result.set(rawDate, n)
+  }
+  return result
+}
+
+function parseAllIndexPrices(halfYearFile: string | null, shzsFile: string | null, kcgzFile: string | null): IndexDailyPrice[] {
+  const byDate = new Map<string, IndexDailyPrice>()
+
+  const getOrCreate = (date: string): IndexDailyPrice => {
+    if (!byDate.has(date)) byDate.set(date, { date, shzs: null, zz500: null, kcgz: null })
+    return byDate.get(date)!
+  }
+
+  // 中证500 from 半年指数 file
+  if (halfYearFile) {
+    const data = parseWideIndexFile(halfYearFile, {
+      zz500: (h) => h.includes('中证500') && !h.includes('涨跌'),
+    })
+    for (const [date, vals] of data) {
+      const entry = getOrCreate(date)
+      if (vals.zz500 !== undefined) entry.zz500 = vals.zz500
+    }
+  }
+
+  // 上证综合指数
+  if (shzsFile) {
+    const data = parseWideIndexFile(shzsFile, {
+      shzs: (h) => h.includes('上证综合') || h.includes('上证综指'),
+    })
+    for (const [date, vals] of data) {
+      const entry = getOrCreate(date)
+      if (vals.shzs !== undefined) entry.shzs = vals.shzs
+    }
+  }
+
+  // 科创综指
+  if (kcgzFile) {
+    const data = parseNarrowIndexFile(kcgzFile, 'kcgz')
+    for (const [date, val] of data) {
+      getOrCreate(date).kcgz = val
+    }
+  }
+
+  return [...byDate.values()]
+    .filter((p) => p.date >= '2025-12-31')
+    .sort((a, b) => a.date.localeCompare(b.date))
 }
 
 function selectSheet(workbook: XLSX.WorkBook): { sheetName: string; rows: unknown[][] } {
@@ -270,7 +341,7 @@ function round(n: number, decimals: number): number {
 
 function main() {
   const warnings: string[] = []
-  const { mainFile: fileName, priceFile, indexFile, settlementFile } = findExcelFiles()
+  const { mainFile: fileName, priceFile, halfYearFile, shzsFile, kcgzFile, settlementFile } = findExcelFiles()
   const filePath = path.join(DATA_DIR, fileName)
   const buffer = fs.readFileSync(filePath)
   const workbook = XLSX.read(buffer, { type: 'buffer' })
@@ -368,10 +439,16 @@ function main() {
   }
 
   const dailyPrices = priceFile ? parseDailyPrices(path.join(DATA_DIR, priceFile)) : {}
-  const indexPrices = indexFile ? parseIndexPrices(path.join(DATA_DIR, indexFile)) : []
+  const indexPrices = parseAllIndexPrices(
+    halfYearFile ? path.join(DATA_DIR, halfYearFile) : null,
+    shzsFile ? path.join(DATA_DIR, shzsFile) : null,
+    kcgzFile ? path.join(DATA_DIR, kcgzFile) : null,
+  )
 
   if (!priceFile) warnings.push('未找到行情序列文件（文件名需含"行情序列"），日线数据将缺失。')
-  if (!indexFile) warnings.push('未找到指数文件（文件名需含"指数"），指数数据将缺失。')
+  if (!halfYearFile) warnings.push('未找到半年指数文件（文件名需含"半年指数"），中证500数据将缺失。')
+  if (!shzsFile) warnings.push('未找到上证综合指数文件（文件名需含"上证综合指数"），数据将缺失。')
+  if (!kcgzFile) warnings.push('未找到科创综指文件（文件名需含"科创综指"），数据将缺失。')
 
   const output: DashboardData = {
     meta: {

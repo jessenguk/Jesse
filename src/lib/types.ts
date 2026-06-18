@@ -43,9 +43,9 @@ export interface DailyPrice {
 
 export interface IndexDailyPrice {
   date: string
-  cyzb: number | null
-  zz500: number | null
-  zz1000: number | null
+  shzs: number | null   // 上证综合指数
+  zz500: number | null  // 中证500
+  kcgz: number | null   // 科创综指
 }
 
 export interface DashboardData {
