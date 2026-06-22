@@ -18,16 +18,22 @@ import {
   formatPct,
   getMarketContextInsights,
   getMarketContextSummary,
+  getTimeWindowContextSummary,
   type IndexKey,
   type MarketContextBatch,
 } from '../lib/metrics'
-import type { IndexDailyPrice, StockRecord } from '../lib/types'
+import type { DailyPrice, IndexDailyPrice, StockRecord } from '../lib/types'
 
 interface MarketContextChartProps {
   stocks: StockRecord[]
   indexPrices: IndexDailyPrice[]
   indexKey?: IndexKey
   indexName?: string
+  /** When set (e.g. 2 or 5), measure stock & index returns over this many trading
+   *  days after the recommendation instead of to the Excel settlement date. */
+  window?: number
+  /** Required when `window` is set — per-stock daily price series. */
+  dailyPrices?: Record<string, DailyPrice[]>
 }
 
 const QUADRANT_COLORS: Record<string, string> = {
@@ -59,8 +65,11 @@ function ScatterTooltip({ active, payload }: { active?: boolean; payload?: { pay
   )
 }
 
-export default function MarketContextChart({ stocks, indexPrices, indexKey = 'shzs', indexName = '上证综指' }: MarketContextChartProps) {
-  const summary = getMarketContextSummary(stocks, indexPrices, indexKey)
+export default function MarketContextChart({ stocks, indexPrices, indexKey = 'shzs', indexName = '上证综指', window, dailyPrices }: MarketContextChartProps) {
+  const summary =
+    window && dailyPrices
+      ? getTimeWindowContextSummary(stocks, dailyPrices, indexPrices, indexKey, window)
+      : getMarketContextSummary(stocks, indexPrices, indexKey)
   if (summary.batches.length === 0) return <EmptyState />
 
   const { batches, indexSeries, recDates, latestIndexDate } = summary

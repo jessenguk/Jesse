@@ -1,4 +1,4 @@
-import { RETURN_BUCKETS, type IndexDailyPrice, type ReturnBucket, type StockRecord } from './types'
+import { RETURN_BUCKETS, type DailyPrice, type IndexDailyPrice, type ReturnBucket, type StockRecord } from './types'
 
 export const COLOR_POSITIVE = '#dc2626' // red — positive return
 export const COLOR_NEGATIVE = '#16a34a' // green — negative return
@@ -694,8 +694,90 @@ export function getMarketContextInsights(summary: MarketContextSummary): string[
   const best = [...withMarket].sort((a, b) => b.avgStockReturn - a.avgStockReturn)[0]
   if (best) {
     insights.push(
-      `表现最佳批次 ${best.recommendDate}：个股均值 ${formatPct(best.avgStockReturn)}，同期创业板指 ${formatPct(best.marketReturnPct)}。`,
+      `表现最佳批次 ${best.recommendDate}：个股均值 ${formatPct(best.avgStockReturn)}，同期大盘 ${formatPct(best.marketReturnPct)}。`,
     )
   }
   return insights
+}
+
+// ---------------------------------------------------------------------------
+// Sections 10+: 推荐后固定窗口（T+2 / T+5）大盘环境
+// Same four-quadrant framework, but stock & index returns are measured over a
+// fixed number of trading days after the recommendation, not to the settlement date.
+
+/** Given a date-sorted series, return the value on/after recDate and `window`
+ *  trading days later. Returns null if the window extends past available data. */
+function valueAtAndAfter(
+  series: { date: string; value: number }[],
+  recDate: string,
+  window: number,
+): { start: number; endDate: string; end: number } | null {
+  if (series.length === 0) return null
+  const startIdx = series.findIndex((p) => p.date >= recDate)
+  if (startIdx === -1) return null
+  const endIdx = startIdx + window
+  if (endIdx >= series.length) return null
+  return { start: series[startIdx].value, endDate: series[endIdx].date, end: series[endIdx].value }
+}
+
+export function getTimeWindowContextSummary(
+  stocks: StockRecord[],
+  dailyPrices: Record<string, DailyPrice[]>,
+  indexPrices: IndexDailyPrice[],
+  indexKey: IndexKey,
+  window: number,
+): MarketContextSummary {
+  if (stocks.length === 0 || indexPrices.length === 0) {
+    return { batches: [], indexSeries: [], recDates: [], latestIndexDate: null }
+  }
+
+  const validIndex = indexPrices
+    .filter((p) => p[indexKey] !== null)
+    .map((p) => ({ date: p.date, value: p[indexKey]! }))
+  const latestIndexDate = validIndex.length > 0 ? validIndex[validIndex.length - 1].date : null
+
+  const byDate = new Map<string, StockRecord[]>()
+  for (const s of stocks) {
+    if (!byDate.has(s.recommendDate)) byDate.set(s.recommendDate, [])
+    byDate.get(s.recommendDate)!.push(s)
+  }
+
+  const batches: MarketContextBatch[] = []
+  for (const [date, batchStocks] of [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    // Per-stock T+N return (close-to-close, using back-adjusted daily prices)
+    const stockReturns: number[] = []
+    for (const s of batchStocks) {
+      const raw = dailyPrices[s.stockCode]
+      if (!raw || raw.length === 0) continue
+      const series = raw.map((p) => ({ date: p.date, value: p.close }))
+      const r = valueAtAndAfter(series, date, window)
+      if (r && r.start !== 0) stockReturns.push(((r.end - r.start) / r.start) * 100)
+    }
+    const avgStockReturn = stockReturns.length > 0 ? roundM(stockReturns.reduce((a, b) => a + b, 0) / stockReturns.length, 2) : 0
+
+    // Index T+N return over the same window
+    const idxR = valueAtAndAfter(validIndex, date, window)
+    const marketReturnPct = idxR && idxR.start !== 0 ? roundM(((idxR.end - idxR.start) / idxR.start) * 100, 2) : null
+
+    let quadrant: MarketContextBatch['quadrant'] = null
+    if (marketReturnPct !== null) {
+      const marketUp = marketReturnPct >= 0
+      const stockUp = avgStockReturn >= 0
+      quadrant = marketUp ? (stockUp ? '顺风好选' : '顺风差选') : stockUp ? '逆风好选' : '逆风差选'
+    }
+
+    batches.push({
+      recommendDate: date,
+      shortLabel: date.slice(5).replace('-', '/'),
+      stockCount: stockReturns.length,
+      avgStockReturn,
+      marketReturnPct,
+      quadrant,
+    })
+  }
+
+  const earliestRec = batches[0]?.recommendDate ?? ''
+  const indexSeries = validIndex.filter((p) => p.date >= earliestRec)
+
+  return { batches, indexSeries, recDates: batches.map((b) => b.recommendDate), latestIndexDate }
 }

@@ -24,6 +24,7 @@ export default function App() {
 
   const stocks = dataState.status === 'ready' ? dataState.data.stocks : []
   const indexPrices = dataState.status === 'ready' ? dataState.data.indexPrices : []
+  const dailyPrices = dataState.status === 'ready' ? dataState.data.dailyPrices : {}
 
   const industries = useMemo(() => getUniqueIndustries(stocks), [stocks])
   const dates = useMemo(() => getUniqueDates(stocks), [stocks])
@@ -203,6 +204,30 @@ export default function App() {
 
             <SectionCard index={9} title="推荐时点与大盘环境（科创综指）" subtitle="以科创综指为参照，分析各批次推荐的市场环境与选股表现">
               <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} indexKey="kcgz" indexName="科创综指" />
+            </SectionCard>
+
+            <SectionCard index={10} title="推荐后 2 日表现（上证综指）" subtitle="个股与上证综指均取推荐后 2 个交易日的收益，观察短期介入节奏">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} dailyPrices={dailyPrices} window={2} indexKey="shzs" indexName="上证综指" />
+            </SectionCard>
+
+            <SectionCard index={11} title="推荐后 5 日表现（上证综指）" subtitle="个股与上证综指均取推荐后 5 个交易日的收益，观察短期介入节奏">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} dailyPrices={dailyPrices} window={5} indexKey="shzs" indexName="上证综指" />
+            </SectionCard>
+
+            <SectionCard index={12} title="推荐后 2 日表现（中证500）" subtitle="个股与中证500均取推荐后 2 个交易日的收益，观察短期介入节奏">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} dailyPrices={dailyPrices} window={2} indexKey="zz500" indexName="中证500" />
+            </SectionCard>
+
+            <SectionCard index={13} title="推荐后 5 日表现（中证500）" subtitle="个股与中证500均取推荐后 5 个交易日的收益，观察短期介入节奏">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} dailyPrices={dailyPrices} window={5} indexKey="zz500" indexName="中证500" />
+            </SectionCard>
+
+            <SectionCard index={14} title="推荐后 2 日表现（科创综指）" subtitle="个股与科创综指均取推荐后 2 个交易日的收益，观察短期介入节奏">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} dailyPrices={dailyPrices} window={2} indexKey="kcgz" indexName="科创综指" />
+            </SectionCard>
+
+            <SectionCard index={15} title="推荐后 5 日表现（科创综指）" subtitle="个股与科创综指均取推荐后 5 个交易日的收益，观察短期介入节奏">
+              <MarketContextChart stocks={filteredStocks} indexPrices={indexPrices} dailyPrices={dailyPrices} window={5} indexKey="kcgz" indexName="科创综指" />
             </SectionCard>
 
             <footer className="py-4 text-center font-mono text-[11px] tracking-wide text-gray-400">
