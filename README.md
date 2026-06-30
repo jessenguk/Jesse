@@ -1,90 +1,175 @@
-# 个股收益可视化 Dashboard
+# Stock Recommendation Analytics Dashboard
 
-基于本地 Excel 数据自动生成的个股推荐收益分析仪表盘。所有图表数据均来自 `data/` 目录下的 Excel 文件，
-不在代码中硬编码任何股票名称、收益率、行业或日期。
+An end-to-end analytics pipeline that evaluates whether a set of analyst stock
+recommendations showed genuine **selection skill** — measured against three
+market benchmarks over multiple holding horizons.
 
-## 功能
+**Live demo:** https://jesse-dashboard.pages.dev
 
-1. **个股收益排行（Top / Bottom）**：按区间涨跌幅排序的前 N / 后 N 个股，红色为正收益、绿色为负收益。
-2. **收益分布**：按 8 个收益区间（`<-30%` ~ `>50%`）统计个股数量，并给出广基 / 右尾特征说明。
-3. **行业平均收益**：各行业大类的平均收益排行，附中位数、正收益占比、样本量提示。
-4. **推荐批次贡献瀑布图**：各推荐日期对整体等权平均收益的贡献，累计值收敛到整体平均收益。
-5. **行业四维气泡图**：X = 行业平均收益，Y = 正收益占比，气泡大小 = 股票数量，颜色深浅 = 行业弹性。
+> Built as a self-directed quantitative project: data sourced from Tonghuashun
+> iFinD, cleaned and analysed with a reproducible pipeline, and published as an
+> interactive dashboard with automated CI/CD deployment.
 
-页面顶部提供行业筛选、推荐日期筛选、Top N 选择器，以及行业气泡标签显示开关，均会实时联动所有图表。
+---
 
-## 数据准备
+## Key finding
 
-1. 将 Excel 数据文件（`.xlsx`）放入 `data/` 目录。脚本会自动选择该目录下最新修改的 `.xlsx` 文件。
-2. 脚本会优先使用名为 `Data_Master`（其次 `Clean_Data`）的工作表；如果都不存在，会自动寻找包含
-   “个股名称”和“区间涨跌幅”列的工作表中行数最多的一个。
-3. 运行数据准备脚本，生成 `public/generated/dashboard-data.json`：
+Across **53 recommendations** in **17 batches** (Feb–May 2026), benchmarked
+against the **SSE Composite, CSI 500, and STAR Composite** indices over the
+recommendation window and at **T+2 / T+5** trading-day horizons:
+
+| Horizon | Batches beating benchmark | Mean excess return |
+| --- | --- | --- |
+| Full window (to settlement) | 8 / 17 (47%) | +3.7% |
+| T+2 | 6–8 / 17 (≈39%) | −1.2% to −1.9% |
+| T+5 | 8–9 / 17 (≈51%) | −0.5% to +0.8% |
+
+**The hit rate hovers around 35–53% — statistically indistinguishable from a
+coin flip — and mean excess return is approximately zero.** There is no
+evidence of systematic stock-selection skill. Absolute returns were positive
+(55% of names up, +4.0% mean), but this reflects a broadly rising market
+(beta), not alpha. The recommendations also showed no special "headwind"
+ability: in batches where the market fell after recommendation, only ≈30% of
+batches still delivered positive returns.
+
+This is reported as a **null result on purpose** — the value of the project is
+the evaluation framework and the honesty of the conclusion, not a manufactured
+edge.
+
+---
+
+## What the dashboard shows
+
+15 linked sections, all driven by the underlying data (no hardcoded values).
+Global filters (industry, recommendation date, Top N) update every chart live.
+
+**Descriptive (1–6)**
+1. Top / Bottom return ranking
+2. Return distribution across 8 buckets (`<-30%` … `>50%`)
+3. Industry average return, with median, hit rate, sample size
+4. Timing of peak return after recommendation
+5. Batch contribution waterfall (each batch's share of the equal-weight mean)
+6. Four-dimension industry bubble chart
+
+**Market-context evaluation (7–15)** — the analytical core
+- **7–9:** Full-window performance vs SSE Composite / CSI 500 / STAR Composite,
+  each batch placed in a four-quadrant grid (tailwind/headwind × good/poor pick).
+- **10–15:** The same framework measured over fixed **T+2** and **T+5**
+  trading-day windows, for each of the three benchmarks — isolating short-term
+  entry timing from longer-horizon drift.
+
+The four quadrants distinguish *market environment* from *selection quality*:
+a stock can rise in a rising market (beta) or rise while the market falls
+(genuine pick) — the grid separates the two.
+
+---
+
+## Architecture
+
+```
+Tonghuashun iFinD (.xlsx)
+        │
+        ▼
+  npm run prepare-data        ← Node + tsx pipeline (scripts/prepare-data.ts)
+        │  parse · clean · validate · merge price + index series
+        ▼
+public/generated/dashboard-data.json
+        │
+        ▼
+  React + Recharts dashboard  ← fetched at runtime, fully data-driven
+        │
+        ▼
+  git push → GitHub Actions → Cloudflare Pages   (auto-deploy, ~2 min)
+```
+
+**Tech stack:** React 18, TypeScript, Vite, Tailwind CSS, Recharts;
+data pipeline in Node/tsx with `xlsx`; CI/CD via GitHub Actions → Cloudflare
+Pages (chosen over Vercel for accessibility in mainland China without a VPN).
+
+### Why this design
+- **Single source of truth.** Charts never hardcode numbers; everything flows
+  from the Excel inputs through one deterministic pipeline, so refreshing the
+  analysis is one command.
+- **Separation of concerns.** The pipeline (`scripts/`) handles messy
+  real-world Excel — multiple sheets, inconsistent date formats, settlement
+  dates split across files — and emits one clean JSON contract the UI consumes.
+- **Reproducible.** Anyone can drop in new iFinD exports and regenerate the
+  entire dashboard.
+
+---
+
+## Methodology
+
+Full write-up in [`docs/FINDINGS.md`](docs/FINDINGS.md). In brief:
+
+- **Returns** are measured two ways: (a) recommendation date → analyst
+  settlement date (full window), and (b) close-to-close over fixed T+2 / T+5
+  trading-day windows using back-adjusted daily prices.
+- **Excess return** = batch equal-weight stock return − same-window index
+  return, computed separately for each of three benchmarks.
+- **Trading-day alignment.** Windows count actual trading days (holidays and
+  weekends skipped automatically), so stock and index returns cover identical
+  calendar periods.
+- **Honest benchmarking.** Three indices of differing breadth (large-cap,
+  mid-cap, STAR board) are used so the conclusion does not hinge on a single
+  benchmark choice.
+
+---
+
+## Running locally
+
+```bash
+npm install           # install dependencies (first run)
+npm run prepare-data  # parse data/*.xlsx → public/generated/dashboard-data.json
+npm run dev           # dev server at http://localhost:5173
+```
+
+Production build:
+
+```bash
+npm run build         # type-check + bundle to dist/
+npm run preview       # preview the production build
+```
+
+## Updating the data
+
+1. Drop new iFinD `.xlsx` exports into `data/` (file names are auto-detected:
+   `行情序列` = daily prices, index files by name, the rest = the recommendation
+   master sheet).
+2. Run the deploy sequence:
 
    ```bash
    npm run prepare-data
+   npm run build
+   git add .
+   git commit -m "Update data"
+   git push                       # GitHub Actions redeploys to Cloudflare Pages
    ```
 
-   该命令会在终端打印：使用的文件名、工作表名、原始行数 / 有效个股数，以及任何警告（缺失列、空行、
-   缺少必需字段的行数等）。
+No component code changes are needed — the UI re-renders from the new JSON.
 
-## 本地运行
+---
 
-```bash
-npm install          # 首次运行，安装依赖
-npm run prepare-data  # 生成 dashboard-data.json
-npm run dev            # 启动开发服务器，默认 http://localhost:5173
-```
+## Data inputs
 
-打开浏览器访问开发服务器地址即可查看仪表盘。
-
-## 构建生产版本
-
-```bash
-npm run build    # 类型检查 + 构建到 dist/
-npm run preview  # 本地预览构建结果
-```
-
-## 替换 / 更新数据
-
-1. 将新的 Excel 文件放入 `data/`（可保留旧文件，脚本会选择最新修改的 `.xlsx`）。
-2. 重新运行 `npm run prepare-data` 生成新的 `dashboard-data.json`。
-3. 刷新浏览器即可看到更新后的数据，无需修改任何组件代码。
-
-## 发布到线上（Vercel）
-
-修改 Excel 数据后，在终端依次运行以下命令，即可更新线上网站（约 1 分钟内生效）：
-
-```bash
-cd /Users/j/stock-dashboard
-npm run prepare-data
-git add data/ public/generated/dashboard-data.json
-git commit -m "Update stock data"
-git push
-```
-
-`git push` 会自动触发 Vercel 重新部署，线上地址（如 `jesse123.vercel.app`）会自动更新为最新数据，无需在 Vercel 上做任何操作。
-
-## 字段说明
-
-`scripts/prepare-data.ts` 会从 Excel 中识别并标准化以下字段（括号内为源数据列名）：
-
-| 字段 | 说明 |
+| File pattern | Contents |
 | --- | --- |
-| `stockName` | 个股名称 |
-| `stockCode` | 股票代码（自动补齐为 6 位） |
-| `recommendDate` | 个股推荐日期（`YYYY-MM-DD`） |
-| `industry` | 行业大类 |
-| `returnPct` | 区间涨跌幅（百分数，如 `10.99` 表示 +10.99%） |
-| `maxReturnPct` | 最高涨幅（%），缺失时为 `null` |
-| `trackingDays` | 距推荐日交易天数，缺失时为 `null` |
-| `dailyReturnPct` | 日均收益率；若源数据缺失，则按 `区间涨跌幅 / 距推荐日交易天数` 计算，仍无法计算时为 `null` |
-| `isPositive` | 区间涨跌幅 > 0 |
-| `returnBucket` | 收益分布区间（`<-30%` ~ `>50%` 共 8 档） |
+| Recommendation master | Stock name, code, recommend date, industry, window return, settlement date |
+| `行情序列` | Per-stock daily back-adjusted close prices |
+| Index files | Daily closes for SSE Composite, CSI 500, STAR Composite |
 
-## 已知限制
+The pipeline standardises codes to 6 digits, normalises mixed date formats
+(`YYYYMMDD`, `YYYY/M/D`, Excel serials) to `YYYY-MM-DD`, and merges settlement
+dates that live in a separate supplementary export.
 
-- 数据中如出现同一股票被多次推荐（不同推荐日期），会作为独立记录分别统计，不做去重。
-- 行业平均收益等统计在样本量 n ≤ 2 时会在图表下方提示“仅供参考”。
-- 若 `dailyReturnPct` 因缺少“距推荐日交易天数”而无法计算，页面顶部会显示数据提示。
-- 若 Excel 中缺少必需列（个股名称、代码、推荐日期、行业、区间涨跌幅），相关行会被忽略，并在
-  `npm run prepare-data` 的输出及页面顶部的“数据提示”中列出。
+## Limitations
+
+- 53 recommendations / 17 batches over ~4 months is a small sample; the null
+  result is suggestive, not statistically conclusive.
+- The observation period was broadly bullish, so absolute returns overstate
+  skill — excess return vs benchmark is the meaningful metric.
+- A stock recommended on multiple dates is treated as independent records, not
+  de-duplicated.
+- T+N returns use the recommendation-day **close** as the entry price (daily
+  series provides closes only), whereas the full-window figure uses the
+  analyst's recorded entry; the two are not directly comparable.
