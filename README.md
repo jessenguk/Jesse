@@ -10,6 +10,13 @@ market benchmarks over multiple holding horizons.
 > iFinD, cleaned and analysed with a reproducible pipeline, and published as an
 > interactive dashboard with automated CI/CD deployment.
 
+> **Scope of my work.** The stock recommendations being evaluated were produced
+> by a third party — they are the *input* under test, not my picks. I designed
+> and built everything else: the research question and evaluation framework, the
+> data pipeline, the benchmarking and four-quadrant methodology, the dashboard,
+> and the deployment. This is an **evaluator's** project — the buy-side task of
+> independently judging whether someone else's recommendations have an edge.
+
 ---
 
 ## Key finding

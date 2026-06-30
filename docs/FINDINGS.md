@@ -11,6 +11,12 @@ hypothesis: *the recommendations have no edge over the market.* The goal was to
 build a framework rigorous enough to reject that hypothesis if an edge existed —
 and to report honestly if it did not.
 
+**Role.** The recommendations are a third-party input under evaluation, not my
+own stock picks. My contribution is the evaluation: the framework, data
+pipeline, benchmarking methodology, and the honest reporting of the result —
+the buy-side discipline of judging whether external recommendations are worth
+following.
+
 ## Data
 
 - **53 stock recommendations** across **17 batches** (grouped by recommendation
